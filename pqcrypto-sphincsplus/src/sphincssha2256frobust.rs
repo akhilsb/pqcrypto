@@ -1,3 +1,4 @@
+
 //! sphincs-sha2-256f-robust
 //!
 //! These bindings use the clean version from [PQClean][pqc]
@@ -345,6 +346,8 @@ pub fn verify_detached_signature(
 
 #[cfg(test)]
 mod test {
+    use std::{println, time::SystemTime};
+
     use super::*;
     use rand::prelude::*;
 
@@ -355,8 +358,25 @@ mod test {
 
         let message = (0..len).map(|_| rng.gen::<u8>()).collect::<Vec<_>>();
         let (pk, sk) = keypair();
+        let pk_str = base64::encode(pk.0);
+        println!("{}",pk_str);
+        println!("{}",base64::encode(sk.0));
+        let start_time = SystemTime::now();
         let sm = sign(&message, &sk);
+        match start_time.elapsed(){
+            Ok(time) =>{
+                println!("Sign: {}",time.as_micros())
+            },
+            Err(_) => {}
+        }
+        let start_time = SystemTime::now();
         let verifiedmsg = open(&sm, &pk).unwrap();
+        match start_time.elapsed(){
+            Ok(time) =>{
+                println!("Verf: {}",time.as_micros())
+            },
+            Err(_) => {}
+        }
         assert!(verifiedmsg == message);
     }
 

@@ -34,7 +34,7 @@ macro_rules! simple_struct {
         #[derive(Clone, Copy)]
         #[cfg_attr(feature = "serialization", derive(Serialize, Deserialize))]
         pub struct $type(
-            #[cfg_attr(feature = "serialization", serde(with = "BigArray"))] [u8; $size],
+            #[cfg_attr(feature = "serialization", serde(with = "BigArray"))] pub [u8; $size],
         );
 
         impl $type {
@@ -329,7 +329,11 @@ pub fn verify_detached_signature(
 
 #[cfg(test)]
 mod test {
+    use core::convert::TryInto;
+    use std::{time::SystemTime, println};
+
     use super::*;
+    use pqcrypto_traits::sign::PublicKey;
     use rand::prelude::*;
 
     #[test]
@@ -339,8 +343,25 @@ mod test {
 
         let message = (0..len).map(|_| rng.gen::<u8>()).collect::<Vec<_>>();
         let (pk, sk) = keypair();
+        let pk_str = base64::encode(pk.0);
+        let start_time = SystemTime::now();
         let sm = sign(&message, &sk);
-        let verifiedmsg = open(&sm, &pk).unwrap();
+        let pk_deser_str:[u8;ffi::PQCLEAN_DILITHIUM3AES_CLEAN_CRYPTO_PUBLICKEYBYTES] = base64::decode(pk_str.as_str()).unwrap().as_slice().try_into().expect("Invalid deserializastion");
+        let pk_key = crate::dilithium3aes::PublicKey::from_bytes(&pk_deser_str).expect("Invalid deserialization");
+        match start_time.elapsed(){
+            Ok(time) =>{
+                println!("Sign: {}",time.as_micros())
+            },
+            Err(_) => {}
+        }
+        let start_time = SystemTime::now();
+        let verifiedmsg = open(&sm, &pk_key).unwrap();
+        match start_time.elapsed(){
+            Ok(time) =>{
+                println!("Verf: {}",time.as_micros())
+            },
+            Err(_) => {}
+        }
         assert!(verifiedmsg == message);
     }
 

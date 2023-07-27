@@ -349,6 +349,8 @@ pub fn verify_detached_signature(
 
 #[cfg(test)]
 mod test {
+    use std::{time::SystemTime, println};
+
     use super::*;
     use rand::prelude::*;
 
@@ -359,8 +361,22 @@ mod test {
 
         let message = (0..len).map(|_| rng.gen::<u8>()).collect::<Vec<_>>();
         let (pk, sk) = keypair();
+        let start_time = SystemTime::now();
         let sm = sign(&message, &sk);
+        match start_time.elapsed(){
+            Ok(time) =>{
+                println!("Sign: {}",time.as_millis())
+            },
+            Err(_) => {}
+        }
+        let start_time = SystemTime::now();
         let verifiedmsg = open(&sm, &pk).unwrap();
+        match start_time.elapsed(){
+            Ok(time) =>{
+                println!("Verification: {}",time.as_millis())
+            },
+            Err(_) => {}
+        }
         assert!(verifiedmsg == message);
     }
 
