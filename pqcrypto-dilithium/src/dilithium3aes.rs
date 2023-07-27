@@ -134,7 +134,7 @@ impl primitive::DetachedSignature for DetachedSignature {
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serialization", derive(Serialize, Deserialize))]
-pub struct SignedMessage(Vec<u8>);
+pub struct SignedMessage(pub Vec<u8>);
 impl primitive::SignedMessage for SignedMessage {
     /// Get this object as a byte slice
     #[inline]
@@ -346,6 +346,8 @@ mod test {
         let pk_str = base64::encode(pk.0);
         let start_time = SystemTime::now();
         let sm = sign(&message, &sk);
+        let vec_sign = sm.0;
+        let sm_star = SignedMessage{0:vec_sign};
         let pk_deser_str:[u8;ffi::PQCLEAN_DILITHIUM3AES_CLEAN_CRYPTO_PUBLICKEYBYTES] = base64::decode(pk_str.as_str()).unwrap().as_slice().try_into().expect("Invalid deserializastion");
         let pk_key = crate::dilithium3aes::PublicKey::from_bytes(&pk_deser_str).expect("Invalid deserialization");
         match start_time.elapsed(){
@@ -355,7 +357,7 @@ mod test {
             Err(_) => {}
         }
         let start_time = SystemTime::now();
-        let verifiedmsg = open(&sm, &pk_key).unwrap();
+        let verifiedmsg = open(&sm_star, &pk_key).unwrap();
         match start_time.elapsed(){
             Ok(time) =>{
                 println!("Verf: {}",time.as_micros())
